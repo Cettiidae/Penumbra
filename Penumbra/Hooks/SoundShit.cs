@@ -23,7 +23,8 @@ namespace Penumbra.Hooks
             // .text:0000000000090524 0F 94 C2                  setz    dl
             // .text:0000000000090527 45 33 C0                  xor     r8d, r8d
             // .text:000000000009052A E8 41 1C 15 00            call    musicInit
-            var shit   = scanner.ScanText( "48 8B 8E ?? ?? ?? ?? 39 78 20 0F 94 C2 45 33 C0" );
+            // var shit = scanner.ScanText( "48 8B 8E ?? ?? ?? ?? 39 78 20 0F 94 C2 45 33 C0" );
+            var shit = scanner.ScanText( "48 8B ?? ?? ?? ?? ?? 39 ?? 20 0F 94 C2 45 33 C0" );
             var fuckkk = *( int* )( shit + 3 );
             _musicManager    = *( IntPtr* )( fw + fuckkk );
             StreamingEnabled = false;
