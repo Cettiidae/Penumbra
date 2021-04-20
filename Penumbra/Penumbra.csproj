@@ -6,8 +6,8 @@
         <Company>absolute gangstas</Company>
         <Product>Penumbra</Product>
         <Copyright>Copyright © 2020</Copyright>
-        <FileVersion>0.3.3.1</FileVersion>
-        <AssemblyVersion>0.3.3.1</AssemblyVersion>
+        <FileVersion>0.3.3.3</FileVersion>
+        <AssemblyVersion>0.3.3.3</AssemblyVersion>
         <OutputPath>bin\$(Configuration)\</OutputPath>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
@@ -29,32 +29,21 @@
 
     <ItemGroup>
         <Reference Include="Dalamud">
-            <HintPath>$(DALAMUD_ROOT)\Dalamud.dll</HintPath>
-            <HintPath>..\libs\Dalamud.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
-            <Private>False</Private>
+          <HintPath>..\..\..\..\Git\_Dalamud_\Dalamud\Dalamud\bin\Debug\Dalamud.dll</HintPath>
+          <Private>false</Private>
         </Reference>
         <Reference Include="ImGui.NET">
-            <HintPath>$(DALAMUD_ROOT)\ImGui.NET.dll</HintPath>
-            <HintPath>..\libs\ImGui.NET.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
-            <Private>False</Private>
+          <HintPath>..\..\..\..\Git\_Dalamud_\Dalamud\Dalamud\bin\Debug\ImGui.NET.dll</HintPath>
+          <Private>false</Private>
         </Reference>
         <Reference Include="ImGuiScene">
-            <HintPath>$(DALAMUD_ROOT)\ImGuiScene.dll</HintPath>
-            <HintPath>..\libs\ImGuiScene.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
-            <Private>False</Private>
+          <HintPath>..\..\..\..\Git\_Dalamud_\Dalamud\Dalamud\bin\Debug\ImGuiScene.dll</HintPath>
+          <Private>false</Private>
         </Reference>
         <Reference Include="Lumina">
-            <HintPath>$(DALAMUD_ROOT)\Lumina.dll</HintPath>
-            <HintPath>..\libs\Lumina.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
-            <Private>False</Private>
+          <HintPath>..\..\..\..\Git\_Dalamud_\Dalamud\Dalamud\bin\Debug\Lumina.dll</HintPath>
+          <Private>false</Private>
         </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
         <Reference Include="System.Windows.Forms" />
         <Reference Include="System.Data.DataSetExtensions" />
         <Reference Include="Microsoft.CSharp" />
