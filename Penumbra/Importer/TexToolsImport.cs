@@ -23,7 +23,7 @@ namespace Penumbra.Importer
 
         public ImporterState State { get; private set; }
 
-        public long TotalProgress { get; private set; } = 0;
+        public long TotalProgress { get; private set; }
         public long CurrentProgress { get; private set; }
 
         public float Progress
@@ -40,7 +40,7 @@ namespace Penumbra.Importer
             }
         }
 
-        public string CurrentModPack { get; private set; }
+        public string? CurrentModPack { get; private set; }
 
         public TexToolsImport( DirectoryInfo outDirectory )
         {
@@ -65,7 +65,7 @@ namespace Penumbra.Importer
         }
 
         // You can in no way rely on any file paths in TTMPs so we need to just do this, sorry
-        private ZipEntry FindZipEntry( ZipFile file, string fileName )
+        private static ZipEntry? FindZipEntry( ZipFile file, string fileName )
         {
             for( var i = 0; i < file.Count; i++ )
             {
@@ -84,7 +84,10 @@ namespace Penumbra.Importer
 
             // write shitty zip garbage to disk
             var entry       = FindZipEntry( file, entryName );
-            Debug.Assert( entry != null, $"Could not find in mod zip: {entryName}" );
+            if( entry == null )
+            {
+                throw new FileNotFoundException( $"ZIP does not contain a file named {entryName}." );
+            }
 
             using var s     = file.GetInputStream( entry );
 
@@ -100,7 +103,10 @@ namespace Penumbra.Importer
             using var extractedModPack = new ZipFile( zfs );
 
             var mpl                    = FindZipEntry( extractedModPack, "TTMPL.mpl" );
-            Debug.Assert( mpl != null, "Could not find mod meta in ZIP." );
+            if( mpl == null )
+            {
+                throw new FileNotFoundException( "ZIP does not contain a TTMPL.mpl file." );
+            }
 
             var modRaw                 = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
 
@@ -166,6 +172,12 @@ namespace Penumbra.Importer
         {
             var modList = JsonConvert.DeserializeObject< SimpleModPack >( modRaw );
 
+            if( modList?.TTMPVersion == null )
+            {
+                PluginLog.Error( "Could not extract V2 Modpack. No version given." );
+                return;
+            }
+
             if( modList.TTMPVersion.EndsWith( "s" ) )
             {
                 ImportSimpleV2ModPack( extractedModPack, modList );
@@ -185,11 +197,11 @@ namespace Penumbra.Importer
             // Create a new ModMeta from the TTMP modlist info
             var modMeta = new ModMeta
             {
-                Author = modList.Author,
-                Name   = modList.Name,
+                Author = modList.Author ?? "Unknown",
+                Name   = modList.Name ?? "New Mod",
                 Description = string.IsNullOrEmpty( modList.Description )
                     ? "Mod imported from TexTools mod pack"
-                    : modList.Description
+                    : modList.Description!
             };
 
             // Open the mod data file from the modpack as a SqPackStream
@@ -202,7 +214,7 @@ namespace Penumbra.Importer
             File.WriteAllText( Path.Combine( newModFolder.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta ) );
 
-            ExtractSimpleModList( newModFolder, modList.SimpleModsList, modData );
+            ExtractSimpleModList( newModFolder, modList.SimpleModsList ?? Enumerable.Empty< SimpleMod >(), modData );
         }
 
         private void ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
@@ -214,12 +226,12 @@ namespace Penumbra.Importer
             // Create a new ModMeta from the TTMP modlist info
             var modMeta = new ModMeta
             {
-                Author = modList.Author,
-                Name   = modList.Name,
+                Author = modList.Author ?? "Unknown",
+                Name   = modList.Name ?? "New Mod",
                 Description = string.IsNullOrEmpty( modList.Description )
                     ? "Mod imported from TexTools mod pack"
-                    : modList.Description,
-                Version = modList.Version
+                    : modList.Description ?? "",
+                Version = modList.Version ?? ""
             };
 
             // Open the mod data file from the modpack as a SqPackStream
@@ -243,13 +255,14 @@ namespace Penumbra.Importer
             }
 
             // Iterate through all pages
-            foreach( var group in modList.ModPackPages.SelectMany( page => page.ModGroups ) )
+            foreach( var group in modList.ModPackPages.SelectMany( page => page.ModGroups )
+                .Where( group => group.GroupName != null && group.OptionList != null ) )
             {
-                var groupFolder = new DirectoryInfo( Path.Combine( newModFolder.FullName, group.GroupName.ReplaceInvalidPathSymbols() ) );
-                foreach( var option in group.OptionList )
+                var groupFolder = new DirectoryInfo( Path.Combine( newModFolder.FullName, group.GroupName!.ReplaceInvalidPathSymbols() ) );
+                foreach( var option in group.OptionList!.Where( option => option.Name != null && option.ModsJsons != null ) )
                 {
-                    var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name.ReplaceInvalidPathSymbols() ) );
-                    ExtractSimpleModList( optionFolder, option.ModsJsons, modData );
+                    var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name!.ReplaceInvalidPathSymbols() ) );
+                    ExtractSimpleModList( optionFolder, option.ModsJsons!, modData );
                 }
 
                 AddMeta( newModFolder, groupFolder, group, modMeta );
@@ -263,34 +276,33 @@ namespace Penumbra.Importer
 
         private static void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder, ModGroup group, ModMeta meta )
         {
-            var Inf = new InstallerInfo
+            var inf = new OptionGroup
             {
                 SelectionType = group.SelectionType,
-                GroupName     = group.GroupName,
+                GroupName     = group.GroupName!,
                 Options       = new List< Option >()
             };
-            foreach( var opt in group.OptionList )
+            foreach( var opt in group.OptionList! )
             {
                 var option = new Option
                 {
-                    OptionName  = opt.Name,
-                    OptionDesc  = string.IsNullOrEmpty( opt.Description ) ? "" : opt.Description,
-                    OptionFiles = new Dictionary< string, HashSet< string > >()
+                    OptionName  = opt.Name!,
+                    OptionDesc  = string.IsNullOrEmpty( opt.Description ) ? "" : opt.Description!,
+                    OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >()
                 };
-                var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name.ReplaceInvalidPathSymbols() ) );
+                var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name!.ReplaceInvalidPathSymbols() ) );
                 if( optDir.Exists )
                 {
                     foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
                     {
-                        option.AddFile( file.FullName.Substring( baseFolder.FullName.Length ).TrimStart( '\\' ),
-                            file.FullName.Substring( optDir.FullName.Length ).TrimStart( '\\' ).Replace( '\\', '/' ) );
+                        option.AddFile( new RelPath( file, baseFolder ), new GamePath( file, optDir ) );
                     }
                 }
 
-                Inf.Options.Add( option );
+                inf.Options.Add( option );
             }
 
-            meta.Groups.Add( group.GroupName, Inf );
+            meta.Groups.Add( group.GroupName!, inf );
         }
 
         private void ImportMetaModPack( FileInfo file )

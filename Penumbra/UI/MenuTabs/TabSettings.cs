@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using ImGuiNET;
+using Penumbra.Hooks;
 
 namespace Penumbra.UI
 {
@@ -20,13 +21,13 @@ namespace Penumbra.UI
             private const string LabelReloadResource       = "Reload Player Resource";
 
             private readonly SettingsInterface _base;
-            private readonly Configuration     _config;
+            private readonly Configuration    _config;
             private          bool              _configChanged;
 
             public TabSettings( SettingsInterface ui )
             {
                 _base          = ui;
-                _config        = _base._plugin.Configuration;
+                _config        = _base._plugin.Configuration!;
                 _configChanged = false;
             }
 
@@ -64,7 +65,7 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
-                    Game.RefreshActors.RedrawAll( _base._plugin.PluginInterface.ClientState.Actors );
+                    Game.RefreshActors.RedrawAll( _base._plugin!.PluginInterface!.ClientState.Actors );
                 }
             }
 
@@ -86,7 +87,6 @@ namespace Penumbra.UI
                 {
                     _config.ShowAdvanced = showAdvanced;
                     _configChanged       = true;
-                    _base._menu.EffectiveTab.RebuildFileList( showAdvanced );
                 }
             }
 
@@ -131,7 +131,7 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( LabelReloadResource ) )
                 {
-                    _base._plugin.GameUtils.ReloadPlayerResources();
+                    Service<GameResourceManagement>.Get().ReloadPlayerResources();
                 }
             }
 

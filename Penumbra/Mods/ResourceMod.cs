@@ -1,45 +1,58 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dalamud.Plugin;
+using Penumbra.Importer;
 using Penumbra.Models;
+using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
     public class ResourceMod
     {
+        public ResourceMod( ModMeta meta, DirectoryInfo dir )
+        {
+            Meta        = meta;
+            ModBasePath = dir;
+        }
+
         public ModMeta Meta { get; set; }
 
         public DirectoryInfo ModBasePath { get; set; }
 
         public List< FileInfo > ModFiles { get; } = new();
+        public Dictionary< FileInfo, TexToolsMeta > MetaManipulations { get; } = new();
 
-        public Dictionary< string, List< string > > FileConflicts { get; } = new();
+        public Dictionary< string, List< GamePath > > FileConflicts { get; } = new();
+
 
         public void RefreshModFiles()
         {
-            if( ModBasePath == null )
-            {
-                PluginLog.LogError( "no basepath has been set on {ResourceModName}", Meta.Name );
-                return;
-            }
-
+            FileConflicts.Clear();
             ModFiles.Clear();
+            MetaManipulations.Clear();
             // we don't care about any _files_ in the root dir, but any folders should be a game folder/file combo
-            foreach( var dir in ModBasePath.EnumerateDirectories() )
+            foreach( var file in ModBasePath.EnumerateDirectories()
+                .SelectMany( dir => dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) ) )
             {
-                foreach( var file in dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
+                if( file.Extension == ".meta" )
                 {
-                    ModFiles.Add( file );
+                    try
+                    {
+                        MetaManipulations[ file ] = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
+                    }
+                    catch( Exception e )
+                    {
+                        PluginLog.Error( $"Could not parse meta file {file.FullName}:\n{e}" );
+                    }
                 }
-            }
 
-            // Only add if not in a sub-folder, otherwise it was already added.
-            //foreach( var pair in Meta.Groups.FileToGameAndGroup )
-            //    if (pair.Key.IndexOfAny(new[]{'/', '\\'}) < 0)
-            //        ModFiles.Add( new FileInfo(Path.Combine(ModBasePath.FullName, pair.Key)) );
+                ModFiles.Add( file );
+            }
         }
 
-        public void AddConflict( string modName, string path )
+        public void AddConflict( string modName, GamePath path )
         {
             if( FileConflicts.TryGetValue( modName, out var arr ) )
             {
@@ -51,10 +64,7 @@ namespace Penumbra.Mods
                 return;
             }
 
-            FileConflicts[ modName ] = new List< string >
-            {
-                path
-            };
+            FileConflicts[ modName ] = new List< GamePath > { path };
         }
     }
 }

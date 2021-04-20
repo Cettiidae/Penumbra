@@ -6,6 +6,7 @@ using EmbedIO.WebApi;
 using Penumbra.API;
 using Penumbra.Game;
 using Penumbra.Hooks;
+using Penumbra.MetaData;
 using Penumbra.Mods;
 using Penumbra.UI;
 
@@ -13,24 +14,24 @@ namespace Penumbra
 {
     public class Plugin : IDalamudPlugin
     {
-        public string Name => "Penumbra";
+        public string Name { get; }
+        public string PluginDebugTitleStr { get; } 
+
+        public Plugin()
+        {
+            Name                = "Penumbra";
+            PluginDebugTitleStr = $"{Name} - Debug Build";
+        }
 
         private const string CommandName = "/penumbra";
 
-        public DalamudPluginInterface PluginInterface { get; set; }
+        public DalamudPluginInterface? PluginInterface { get; set; }
+        public Configuration? Configuration { get; set; }
+        public ResourceLoader? ResourceLoader { get; set; }
+        public SettingsInterface? SettingsInterface { get; set; }
+        public SoundShit? SoundShit { get; set; }
 
-        public Configuration Configuration { get; set; }
-
-        public ResourceLoader ResourceLoader { get; set; }
-
-        public SettingsInterface SettingsInterface { get; set; }
-
-        public GameUtils GameUtils { get; set; }
-        public SoundShit SoundShit { get; set; }
-
-        public string PluginDebugTitleStr { get; private set; }
-
-        private WebServer _webServer;
+        private WebServer? _webServer;
 
         public void Initialize( DalamudPluginInterface pluginInterface )
         {
@@ -40,9 +41,11 @@ namespace Penumbra
             Configuration.Initialize( PluginInterface );
 
             SoundShit = new SoundShit( this );
-            GameUtils = new GameUtils( PluginInterface );
 
+
+            var gameUtils = Service< GameResourceManagement >.Set( PluginInterface );
             var modManager = Service< ModManager >.Set( this );
+            Service< MetaDefaults >.Set( PluginInterface );
             modManager.DiscoverMods( Configuration.CurrentCollection );
 
             ResourceLoader = new ResourceLoader( this );
@@ -55,13 +58,11 @@ namespace Penumbra
             ResourceLoader.Init();
             ResourceLoader.Enable();
 
-            GameUtils.ReloadPlayerResources();
+            gameUtils.ReloadPlayerResources();
 
             SettingsInterface = new SettingsInterface( this );
 
             PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
-
-            PluginDebugTitleStr = $"{Name} - Debug Build";
 
             if( Configuration.EnableHttpApi )
             {
@@ -97,12 +98,12 @@ namespace Penumbra
         {
             // ModManager?.Dispose();
 
-            PluginInterface.UiBuilder.OnBuildUi -= SettingsInterface.Draw;
+            PluginInterface!.UiBuilder.OnBuildUi -= SettingsInterface!.Draw;
 
             PluginInterface.CommandManager.RemoveHandler( CommandName );
             PluginInterface.Dispose();
 
-            ResourceLoader.Dispose();
+            ResourceLoader?.Dispose();
 
             ShutdownWebServer();
         }
@@ -117,8 +118,8 @@ namespace Penumbra
                     case "reload":
                     {
                         Service< ModManager >.Get().DiscoverMods();
-                        PluginInterface.Framework.Gui.Chat.Print(
-                            $"Reloaded Penumbra mods. You have {Service< ModManager >.Get().Mods.ModSettings.Count} mods, {Service< ModManager >.Get().Mods.EnabledMods.Length} of which are enabled."
+                        PluginInterface!.Framework.Gui.Chat.Print(
+                            $"Reloaded Penumbra mods. You have {Service< ModManager >.Get()?.Mods?.ModSettings?.Count ?? 0} mods, {Service< ModManager >.Get()?.Mods?.EnabledMods?.Length ?? 0} of which are enabled."
                         );
                         break;
                     }
@@ -126,11 +127,11 @@ namespace Penumbra
                     {
                         if( args.Length > 1 )
                         {
-                            RefreshActors.RedrawSpecific( PluginInterface.ClientState.Actors, string.Join( " ", args.Skip( 1 ) ) );
+                            RefreshActors.RedrawSpecific( PluginInterface!.ClientState.Actors, string.Join( " ", args.Skip( 1 ) ) );
                         }
                         else
                         {
-                            RefreshActors.RedrawAll( PluginInterface.ClientState.Actors );
+                            RefreshActors.RedrawAll( PluginInterface!.ClientState.Actors );
                         }
 
                         break;
@@ -140,7 +141,7 @@ namespace Penumbra
                 return;
             }
 
-            SettingsInterface.FlipVisibility();
+            SettingsInterface!.FlipVisibility();
         }
     }
 }
