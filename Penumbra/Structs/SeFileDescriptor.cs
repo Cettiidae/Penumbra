@@ -15,7 +15,7 @@ namespace Penumbra.Structs
         public ResourceHandle* ResourceHandle; //
 
 
-        [FieldOffset( 0x70 )]
+        [FieldOffset( 0x68 )]
         public byte UtfFileName; //
     }
 }
