@@ -27,15 +27,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Reference Include="Dalamud">
-            <HintPath>$(DALAMUD_ROOT)\Dalamud.dll</HintPath>
-            <HintPath>..\libs\Dalamud.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
-            <Private>False</Private>
-        </Reference>
+      <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
+      <Reference Include="Dalamud">
+        <HintPath>..\..\..\..\Git\_Dalamud_\Dalamud\Dalamud\bin\Debug\Dalamud.dll</HintPath>
+      </Reference>
     </ItemGroup>
 </Project>
