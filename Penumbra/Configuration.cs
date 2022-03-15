@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Dalamud.Configuration;
 using Dalamud.Logging;
 
@@ -19,6 +20,7 @@ namespace Penumbra
 
         public bool DisableFileSystemNotifications { get; set; }
 
+        public bool DisableSoundStreaming { get; set; } = true;
         public bool EnableHttpApi { get; set; }
         public bool EnablePlayerWatch { get; set; } = false;
         public int WaitFrames { get; set; } = 30;
@@ -31,6 +33,7 @@ namespace Penumbra
         public string ForcedCollection { get; set; } = "";
 
         public bool SortFoldersFirst { get; set; } = false;
+        public bool HasReadCharacterCollectionDesc { get; set; } = false;
 
         public Dictionary< string, string > CharacterCollections { get; set; } = new();
         public Dictionary< string, string > ModSortOrder { get; set; } = new();

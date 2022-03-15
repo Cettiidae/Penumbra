@@ -129,6 +129,11 @@ namespace Penumbra.Mods
                         TempWritable = false;
                     }
                 }
+
+                if( !firstTime )
+                {
+                    Collections.RecreateCaches();
+                }
             }
         }
 
@@ -340,6 +345,14 @@ namespace Penumbra.Mods
             Collections.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta );
 
             return true;
+        }
+
+        public bool CheckCrc64( ulong crc )
+        {
+            if( Collections.ActiveCollection.Cache?.Checksums.Contains( crc ) ?? false )
+                return true;
+
+            return Collections.ForcedCollection.Cache?.Checksums.Contains( crc ) ?? false;
         }
 
         public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )

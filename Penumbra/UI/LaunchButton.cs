@@ -1,55 +1,41 @@
-using System.Numerics;
-using ImGuiNET;
+using System;
+using System.IO;
+using Dalamud.Interface;
+using ImGuiScene;
 
-namespace Penumbra.UI
+namespace Penumbra.UI;
+
+public partial class SettingsInterface
 {
-    public partial class SettingsInterface
+    private class ManageModsButton : IDisposable
     {
-        private class ManageModsButton
+        private readonly SettingsInterface                     _base;
+        private readonly TextureWrap?                          _icon;
+        private readonly TitleScreenMenu.TitleScreenMenuEntry? _entry;
+
+        public ManageModsButton( SettingsInterface ui )
         {
-            // magic numbers
-            private const int    Padding         = 50;
-            private const int    Width           = 200;
-            private const int    Height          = 45;
-            private const string MenuButtonsName = "Penumbra Menu Buttons";
-            private const string MenuButtonLabel = "Manage Mods";
+            _base  = ui;
 
-            private static readonly Vector2 WindowSize      = new( Width, Height );
-            private static readonly Vector2 WindowPosOffset = new( Padding + Width, Padding + Height );
-
-            private const ImGuiWindowFlags ButtonFlags =
-                ImGuiWindowFlags.AlwaysAutoResize
-              | ImGuiWindowFlags.NoBackground
-              | ImGuiWindowFlags.NoDecoration
-              | ImGuiWindowFlags.NoMove
-              | ImGuiWindowFlags.NoScrollbar
-              | ImGuiWindowFlags.NoResize
-              | ImGuiWindowFlags.NoSavedSettings;
-
-            private readonly SettingsInterface _base;
-
-            public ManageModsButton( SettingsInterface ui )
-                => _base = ui;
-
-            public void Draw()
+            _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
+                "tsmLogo.png" ) );
+            if( _icon != null )
             {
-                if( Dalamud.Conditions.Any() || _base._menu.Visible )
-                {
-                    return;
-                }
+                _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
+            }
+        }
 
-                var ss = ImGui.GetMainViewport().Size + ImGui.GetMainViewport().Pos;
-                ImGui.SetNextWindowViewport( ImGui.GetMainViewport().ID );
+        private void OnTriggered()
+        {
+            _base.FlipVisibility();
+        }
 
-                ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
-
-                if( ImGui.Begin( MenuButtonsName, ButtonFlags )
-                 && ImGui.Button( MenuButtonLabel, WindowSize ) )
-                {
-                    _base.FlipVisibility();
-                }
-
-                ImGui.End();
+        public void Dispose()
+        {
+            _icon?.Dispose();
+            if( _entry != null )
+            {
+                Dalamud.TitleScreenMenu.RemoveEntry( _entry );
             }
         }
     }
